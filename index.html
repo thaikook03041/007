@@ -149,13 +149,33 @@
   </main>
 
   <script>
-    const API_URL = "YOUR_WEB_APP_URL_HERE"; 
-    
+    const API_URL = "https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec";
     let globalProducts = [];
 
+    function switchTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      if (tabName === 'home') document.getElementById('tab-home').classList.remove('hidden');
+      if (tabName === 'products') document.getElementById('tab-products').classList.remove('hidden');
+      if (tabName === 'detail') document.getElementById('tab-detail').classList.remove('hidden');
+      if (tabName === 'add') {
+        document.getElementById('product-form').reset();
+        document.getElementById('form-title').innerText = "เพิ่มสินค้าใหม่";
+        document.getElementById('form-is-edit').value = "false";
+        document.getElementById('form-id').readOnly = false;
+        document.getElementById('tab-form').classList.remove('hidden');
+      }
+      if (tabName === 'form') document.getElementById('tab-form').classList.remove('hidden');
+    }
+
+    function filterByStatus(status) {
+      switchTab('products');
+      document.getElementById('search-input').value = status;
+      renderTable();
+    }
+
     window.addEventListener('DOMContentLoaded', async () => {
-      if (API_URL === "https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec" || !API_URL) {
-        alert("https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec");
+      if (API_URL === "YOUR_WEB_APP_URL_HERE" || !API_URL) {
+        alert("กรุณาใส่ Web App URL ในโค้ดก่อนใช้งาน");
         return;
       }
 
@@ -187,36 +207,4 @@
         console.error("API Error:", e);
         try {
           const res = await fetch(API_URL + `?action=${action}` + (payload ? `&id=${payload}` : ''));
-          const text = await res.text();
-          return JSON.parse(text);
-        } catch(err) {
-          alert("ไม่สามารถดึงข้อมูลได้ ตรวจสอบการเปิดสิทธิ์ใน Apps Script (Who has access: Anyone)");
-        }
-      }
-    }
-
-    async function fetchProducts() {
-      const res = await apiCall('GET', 'getAll');
-      if (res && res.status === 'success') {
-        globalProducts = res.data || [];
-        updateDashboardCounts();
-        renderTable();
-      }
-    }
-
-    async function loadSingleProduct(id) {
-      const res = await apiCall('GET', 'getById', id);
-      if (res && res.status === 'success') {
-        showDetail(res.data);
-      } else {
-        alert("ไม่พบข้อมูลสินค้า");
-        switchTab('home');
-      }
-    }
-
-    function renderTable(dataToRender = null) {
-      const data = dataToRender || globalProducts;
-      const searchInput = document.getElementById('search-input');
-      const search = searchInput ? searchInput.value.toLowerCase() : '';
-      const tbody = document.getElementById('product-table-body');
-      if
+        
