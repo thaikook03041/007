@@ -9,7 +9,6 @@
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans pb-12">
 
-  <!-- Navbar Navigation -->
   <nav class="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-md">
     <div class="max-w-4xl mx-auto flex flex-wrap gap-2 justify-between items-center">
       <span class="font-bold text-lg cursor-pointer" onclick="switchTab('home')">📦 StockSystem</span>
@@ -23,13 +22,11 @@
 
   <main class="max-w-4xl mx-auto p-4">
 
-    <!-- Loading Spinner -->
     <div id="loading" class="hidden text-center py-10">
       <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-600 border-t-transparent"></div>
       <p class="mt-2 text-slate-500">กำลังโหลดข้อมูล...</p>
     </div>
 
-    <!-- Tab 1: 🏠 หน้าแรก & สถานะ -->
     <section id="tab-home" class="tab-content">
       <h1 class="text-2xl font-bold mb-4">ภาพรวมสินค้า</h1>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -52,7 +49,6 @@
       </div>
     </section>
 
-    <!-- Tab 2: 📦 รายการสินค้า & 🔍 ค้นหา -->
     <section id="tab-products" class="tab-content hidden">
       <div class="flex justify-between items-center mb-4">
         <h1 class="text-2xl font-bold">รายการสินค้าทั้งหมด</h1>
@@ -75,7 +71,6 @@
       </div>
     </section>
 
-    <!-- Tab 3: 📋 รายละเอียดสินค้า & 📱 QR Code (ใช้สำหรับสแกน QR เข้ามาด้วย) -->
     <section id="tab-detail" class="tab-content hidden">
       <div class="bg-white p-6 rounded shadow max-w-md mx-auto">
         <h2 id="detail-name" class="text-xl font-bold mb-1">ชื่อสินค้า</h2>
@@ -88,7 +83,6 @@
           <p><strong>ตำแหน่งจัดเก็บ:</strong> <span id="detail-location"></span></p>
         </div>
         
-        <!-- QR Code Display -->
         <div class="text-center my-4">
           <div id="qrcode" class="inline-block p-2 bg-white border rounded"></div>
           <p class="text-xs text-slate-400 mt-1">สแกนเพื่อเปิดหน้านี้บนมือถือ</p>
@@ -102,7 +96,6 @@
       </div>
     </section>
 
-    <!-- Tab 4: ➕ เพิ่ม / ✏️ แก้ไข สินค้า -->
     <section id="tab-form" class="tab-content hidden">
       <div class="bg-white p-6 rounded shadow max-w-md mx-auto">
         <h2 id="form-title" class="text-xl font-bold mb-4">เพิ่มสินค้าใหม่</h2>
@@ -156,20 +149,23 @@
   </main>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec"; 
+    const API_URL = "YOUR_WEB_APP_URL_HERE"; 
     
     let globalProducts = [];
 
     window.addEventListener('DOMContentLoaded', async () => {
+      if (API_URL === "https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec" || !API_URL) {
+        alert("https://script.google.com/macros/s/AKfycby9KHKWZhaohOdeF-V2Vb5i25__Q8MJwgixa0tUcOLxPOjFStZ8eTPkcLtXpOUBwYRZVA/exec");
+        return;
+      }
+
       const urlParams = new URLSearchParams(window.location.search);
       const id = urlParams.get('id');
 
       if (id) {
-        // หากเปิดจาก QR Code ให้ดึงข้อมูลสินค้านั้นทันที
         switchTab('detail');
         await loadSingleProduct(id);
       } else {
-        // โหลดข้อมูลทั้งหมดปกติ
         await fetchProducts();
       }
     });
@@ -177,15 +173,10 @@
     async function apiCall(method, action, payload = null) {
       showLoading(true);
       try {
-        let options = { method: method };
         let url = API_URL;
+        let options = { method: 'POST' };
 
-        if (method === 'GET') {
-          url += `?action=${action}` + (payload ? `&id=${payload}` : '');
-        } else {
-          options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
-          options.body = JSON.stringify({ action: action, payload: payload });
-        }
+        options.body = JSON.stringify({ action: action, payload: payload });
 
         const res = await fetch(url, options);
         const json = await res.json();
@@ -193,15 +184,21 @@
         return json;
       } catch (e) {
         showLoading(false);
-        alert("เกิดข้อผิดพลาดในการเชื่อมต่อ API");
-        console.error(e);
+        console.error("API Error:", e);
+        try {
+          const res = await fetch(API_URL + `?action=${action}` + (payload ? `&id=${payload}` : ''));
+          const text = await res.text();
+          return JSON.parse(text);
+        } catch(err) {
+          alert("ไม่สามารถดึงข้อมูลได้ ตรวจสอบการเปิดสิทธิ์ใน Apps Script (Who has access: Anyone)");
+        }
       }
     }
 
     async function fetchProducts() {
       const res = await apiCall('GET', 'getAll');
       if (res && res.status === 'success') {
-        globalProducts = res.data;
+        globalProducts = res.data || [];
         updateDashboardCounts();
         renderTable();
       }
@@ -219,4 +216,7 @@
 
     function renderTable(dataToRender = null) {
       const data = dataToRender || globalProducts;
-     
+      const searchInput = document.getElementById('search-input');
+      const search = searchInput ? searchInput.value.toLowerCase() : '';
+      const tbody = document.getElementById('product-table-body');
+      if
